@@ -1,0 +1,48 @@
+(* ===================================================================
+   DecisionAuth_bypass.ocv  --  the FORGEABLE design (contrast case).
+
+   Same scheme, but the gateway ACCEPTS a decision WITHOUT verifying
+   the signature (it trusts an unauthenticated field). The
+   authentication query must now FAIL: a poly-time adversary makes the
+   gateway accept a decision the authoriser never signed. CryptoVerif
+   cannot prove unforgeability here -- this is the computational-class
+   violation, caught only in the computational model.
+   =================================================================== *)
+
+type keyseed   [large,fixed].
+type pkey      [bounded].
+type skey      [bounded].
+type signature [bounded].
+type signinput [bounded].
+
+proba Psign.
+proba Pkeycoll.
+
+expand UF_CMA_det_signature(keyseed, pkey, skey, signinput, signature,
+                            skgen, pkgen, sign, check, Psign, Pkeycoll).
+
+param Nsign, Nverify.
+
+event accepted(signinput).
+event signed(signinput).
+
+query m: signinput;
+  event(accepted(m)) ==> event(signed(m)).
+
+process
+  Ostart() :=
+    r <-R keyseed;
+    pk <- pkgen(r);
+    sk <- skgen(r);
+    return(pk);
+  (
+    ( foreach i <= Nsign do
+        Osign(m: signinput) :=
+          event signed(m);
+          return(sign(m, sk)) )
+  | ( foreach j <= Nverify do
+        Overify(m: signinput, s: signature) :=
+          (* BUG: accepts without checking the signature *)
+          event accepted(m);
+          return(true) )
+  )

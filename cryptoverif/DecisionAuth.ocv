@@ -1,0 +1,65 @@
+(* ===================================================================
+   DecisionAuth.ocv  --  CryptoVerif 2.12  (COMPUTATIONAL model)
+
+   PROPERTY (decision-authorisation unforgeability):
+     The governance gateway ACCEPTS a decision m only if m carries a
+     valid signature under the authoriser's key. We prove that no
+     probabilistic poly-time adversary can make the gateway accept a
+     decision that the authoriser never signed -- i.e. acceptance is
+     unforgeable -- UNDER THE SINGLE ASSUMPTION that the signature
+     scheme is UF-CMA. CryptoVerif derives the concrete bound Psign.
+
+   This is the computational class: the adversary is ANY probabilistic
+   algorithm with the public key and a signing oracle (chosen-message),
+   and "secure" means a BOUND on its forgery probability. Z3 / Lean /
+   TLA+ cannot even state this -- there is no poly-time adversary, no
+   advantage, no security parameter in their logics.
+   =================================================================== *)
+
+proof {
+  crypto uf_cma(sign);
+  success
+}
+
+type keyseed   [large,fixed].
+type pkey      [bounded].
+type skey      [bounded].
+type signature [bounded].
+type signinput [bounded].   (* the decision being authorised *)
+
+proba Psign.        (* UF-CMA advantage of the signature scheme *)
+proba Pkeycoll.     (* key-collision term *)
+
+expand UF_CMA_det_signature(keyseed, pkey, skey, signinput, signature,
+                            skgen, pkgen, sign, check, Psign, Pkeycoll).
+
+param Nsign, Nverify.
+
+(* authentication: the gateway accepts m only if the authoriser signed m *)
+event accepted(signinput).
+event signed(signinput).
+
+query m: signinput;
+  event(accepted(m)) ==> event(signed(m)).
+
+process
+  Ostart() :=
+    r <-R keyseed;
+    pk <- pkgen(r);
+    sk <- skgen(r);
+    return(pk);     (* adversary learns the public key *)
+  (
+    (* signing oracle: the authoriser legitimately signs decisions      *)
+    ( foreach i <= Nsign do
+        Osign(m: signinput) :=
+          event signed(m);
+          return(sign(m, sk)) )
+  | (* the gateway: accepts a decision iff its signature verifies        *)
+    ( foreach j <= Nverify do
+        Overify(m: signinput, s: signature) :=
+          if check(m, pk, s) then
+            event accepted(m);
+            return(true)
+          else
+            return(false) )
+  )

@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+run_output.txt
+# sealed proof-carrying governed records ARE part of the artifact and are tracked
+# generated per-trace Lean files (Trace.lean is the checked-in source)
+lean/trace_*.lean
+lean/*.olean
+# generated TLC configs and the bundled toolchain jar (falls back to ~/tla-omega)
+tla/SharedBudget_*.cfg
+tla/*.jar
+tla/states/
+tla/*.st
