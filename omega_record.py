@@ -19,41 +19,13 @@ block (proof-vs-intent gap, per-checker scope, residual, soft judgments).
 
 import hashlib
 import json
+from omega_seal import (canonical_stringify, sha256, seal, verify, verify_chain, seal_omega, verify_omega, verify_seal)  # ONE canonical provenance spine (replaces the local copy)
 
 OMEGA_SCHEMA_VERSION = "omega/1.0"
 OMEGA_CONTRACTS_VERSION = "0.2.2"
 RECORD_TYPE = "ProofCarryingEvalRecord"
 
 
-def canonical_stringify(value) -> str:
-    """Faithful port of omega-record.ts canonicalStringify.
-
-    Sorted keys, undefined/None dropped from objects, JS-compatible number
-    formatting (integers print without a trailing .0).
-    """
-    if value is None:
-        return "null"
-    if isinstance(value, bool):
-        return "true" if value else "false"
-    if isinstance(value, int):
-        return str(value)
-    if isinstance(value, float):
-        return str(int(value)) if value.is_integer() else repr(value)
-    if isinstance(value, str):
-        return json.dumps(value, ensure_ascii=False)
-    if isinstance(value, (list, tuple)):
-        return "[" + ",".join(canonical_stringify(v) for v in value) + "]"
-    if isinstance(value, dict):
-        keys = [k for k in sorted(value.keys()) if value[k] is not None]
-        return "{" + ",".join(
-            json.dumps(k, ensure_ascii=False) + ":" + canonical_stringify(value[k])
-            for k in keys) + "}"
-    raise TypeError(f"cannot canonicalise {type(value)}")
-
-
-def sha256(value) -> str:
-    s = value if isinstance(value, str) else canonical_stringify(value)
-    return hashlib.sha256(s.encode("utf-8")).hexdigest()
 
 
 def gate_from_proofs(any_violation: bool, model_action: str) -> tuple:
@@ -119,31 +91,4 @@ def build_omega_eval_record(*, record_id, created_at, domain, action_id, actor_i
     return record
 
 
-def seal_omega(record) -> dict:
-    """Attach the content_hash (over the canonical record) - the tamper-evident
-    seal that also chains to previous_hash."""
-    sealed = dict(record)
-    sealed["content_hash"] = sha256(record)
-    return sealed
 
-
-def verify_omega(sealed) -> bool:
-    claimed = sealed.get("content_hash")
-    if not claimed:
-        return False
-    body = {k: v for k, v in sealed.items() if k != "content_hash"}
-    return sha256(body) == claimed
-
-
-def verify_chain(sealed_records) -> dict:
-    """Verify each record's own seal AND that previous_hash links the chain."""
-    ok = True
-    prev = None
-    for r in sealed_records:
-        if not verify_omega(r):
-            ok = False
-        if r.get("previous_hash") != prev:
-            ok = False
-        prev = r.get("content_hash")
-    return {"chain_intact": ok, "length": len(sealed_records),
-            "head_hash": sealed_records[-1]["content_hash"] if sealed_records else None}
