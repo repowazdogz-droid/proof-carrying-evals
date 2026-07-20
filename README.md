@@ -153,8 +153,14 @@ hash chain). Each record carries:
 
 - the governed-decision anatomy: `decision`, `authorising_entity`, `prior_state`,
   `threshold_applied`, `action_taken`,
-- an `outcome` with the OMEGA gate vocabulary `COMMITTED | HELD | ESCALATED` (a
-  proven violation **HELDs** the decision: `acted: false`),
+- an `outcome` with the OMEGA gate vocabulary `COMMITTED | COMMITTED_PARTIAL |
+  INCONCLUSIVE | HELD | ESCALATED`, plus an honest `aggregate_state`
+  (`VERIFIED | PARTIAL | INCONCLUSIVE | FAILED`) and component run-accounting
+  (`components_passed` / `components_not_run` / `components_failed`) computed by
+  the shared `omega_gate` model. `COMMITTED` (`acted: true`) is emitted only when
+  every required checker executed and passed; a proven violation **HELDs** the
+  decision (`acted: false`); a checker that did not run caps the record at
+  `COMMITTED_PARTIAL` / `INCONCLUSIVE`, never `COMMITTED`,
 - `proof_evidence`: the multi-checker proofs, each tagged with its `checker`
   (z3 | lean | tla) and `is_proof: true`, so the verdict and its proof are one
   object,
