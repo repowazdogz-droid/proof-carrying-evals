@@ -970,7 +970,13 @@ def main():
     ap.add_argument("--judge-runs", type=int, default=3)
     ap.add_argument("--no-model", action="store_true",
                     help="skip the local model; evaluate planted outputs only")
+    ap.add_argument("--out-dir", default=None,
+                    help="directory to write records into (default: records/, which "
+                         "OVERWRITES the committed run; use records/local to keep it)")
     args = ap.parse_args()
+    if args.out_dir:
+        global RECORDS_DIR
+        RECORDS_DIR = os.path.abspath(args.out_dir)
     run(judge_runs=args.judge_runs, use_model=not args.no_model)
 
 

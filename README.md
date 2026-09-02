@@ -98,12 +98,14 @@ The two packages the harness needs, `omega_seal` and `omega_gate`, are vendored 
 
 ```bash
 python3 -m pip install z3-solver
-python3 run.py --no-model        # planted outputs only; Z3 checks; no LLM needed
-python3 run.py --judge-runs 3    # the judged run; needs Ollama with qwen2.5-coder:14b
+python3 run.py --no-model --out-dir records/local        # planted outputs only; Z3; no LLM
+python3 run.py --judge-runs 3 --out-dir records/local    # the judged run; needs Ollama with qwen2.5-coder:14b
 ```
 
-Both commands rewrite `records/omega/pce-NNN.json` and `records/omega/bundle.json`; the
-`.original.json` files are never touched. The Lean, TLC (Java, vendored
+`--out-dir records/local` (git-ignored) keeps the committed run intact. Without it the
+harness writes over `records/omega/pce-NNN.json`; record numbers are assigned per run, so
+a planted-only run produces six records numbered 001 to 006 that are different scenarios
+from the committed rerun's 001 to 006. The `.original.json` files are never touched. The Lean, TLC (Java, vendored
 `tla/tla2tools.jar`, see `THIRD_PARTY.md`) and CryptoVerif checkers run when their tools
 are installed and are recorded as not run when absent; the aggregate can never be
 stronger than its weakest required component (`records/MIGRATION.md`). A judged rerun
