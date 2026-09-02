@@ -18,6 +18,9 @@ unexecuted) can never be recorded as verified; it caps the aggregate at PARTIAL
 executed and passed. See the omega_gate package for the full model and tests.
 """
 
+import os as _os, sys as _sys
+# Prefer the vendored copies (vendor/PROVENANCE.md) so a clean clone reproduces.
+_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "vendor"))
 from omega_seal import (canonical_stringify, sha256, seal, verify, verify_chain,  # noqa: F401
                         seal_omega, verify_omega, verify_seal)  # ONE provenance spine
 import omega_gate  # ONE shared aggregate-state model

@@ -75,29 +75,44 @@ lists the checkers per record.
 
 ## Reproduce
 
-The committed records are the evidence. `records/MANIFEST.md` and `records/TABLE.md`
-are generated from them by reading JSON only, so the table above can be regenerated
-with no dependencies.
+Two levels. The first needs nothing but Python.
 
-Re-running the harness needs two small packages that are not yet published,
-`omega_seal` (the record sealer) and `omega_gate` (the aggregate-verdict model),
-plus `z3-solver`. Until they are released the commands below will fail at import
-on a fresh machine; this is a known gap and is listed under "Not established".
+**FAST (verify the published experiment, no model, no solver):**
 
 ```bash
-python3 run.py --no-model        # planted outputs only; needs z3-solver, no LLM
-python3 run.py --judge-runs 3    # full run; needs a local Ollama with qwen2.5-coder:14b
-python3 -m pytest tests -q       # 12 tests of the aggregate-verdict gate
+git clone https://github.com/repowazdogz-droid/proof-carrying-evals && cd proof-carrying-evals
+python3 scripts/verify_records.py
 ```
 
-Lean, TLC (Java, `tla/tla2tools.jar` vendored, see `THIRD_PARTY.md`) and CryptoVerif
-are invoked by their checkers when present and recorded as not run when absent; the
-aggregate verdict can never be stronger than its weakest required component
-(`records/MIGRATION.md`).
+This recomputes every record's `content_hash` seal (32 records: 16 original, 16 rerun),
+recomputes each record's aggregate verdict from its own proof evidence and compares it
+to the recorded one, regenerates `records/MANIFEST.md` and `records/TABLE.md` from the
+records and compares them byte for byte to the committed files, and checks the headline
+counts (6 violating single-decision cases, judge passed 4, checker proved 6). CI runs
+exactly this plus the 12 gate tests; it does not run the LLM.
+
+The two packages the harness needs, `omega_seal` and `omega_gate`, are vendored under
+`vendor/` unmodified with their provenance in `vendor/PROVENANCE.md`.
+
+**FULL (re-run the experiment):**
+
+```bash
+python3 -m pip install z3-solver
+python3 run.py --no-model        # planted outputs only; Z3 checks; no LLM needed
+python3 run.py --judge-runs 3    # the judged run; needs Ollama with qwen2.5-coder:14b
+```
+
+Both commands rewrite `records/omega/pce-NNN.json` and `records/omega/bundle.json`; the
+`.original.json` files are never touched. The Lean, TLC (Java, vendored
+`tla/tla2tools.jar`, see `THIRD_PARTY.md`) and CryptoVerif checkers run when their tools
+are installed and are recorded as not run when absent; the aggregate can never be
+stronger than its weakest required component (`records/MIGRATION.md`). A judged rerun
+will not reproduce the committed scores exactly: the judge samples at temperature 0.7
+and Ollama's seed handling differs across versions and hardware.
 
 ## Not established
 
-The harness depends on two unpublished packages (`omega_seal`, `omega_gate`), so a third party can inspect and recompute the records but cannot yet re-run the harness. No claim about frontier judges. No claim about properties that were not encoded.
+No claim about frontier judges. No claim about properties that were not encoded.
 No claim that a formal PASS means the decision was right in spirit; the record's
 `boundary` field says so on every run. The two runs were produced by one author on
 one machine.
