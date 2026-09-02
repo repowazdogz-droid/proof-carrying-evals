@@ -10,3 +10,5 @@ tla/SharedBudget_*.cfg
 tla/*.jar
 tla/states/
 tla/*.st
+
+records/local/
