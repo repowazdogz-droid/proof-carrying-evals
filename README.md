@@ -75,9 +75,19 @@ lists the checkers per record.
 
 ## Reproduce
 
+The committed records are the evidence. `records/MANIFEST.md` and `records/TABLE.md`
+are generated from them by reading JSON only, so the table above can be regenerated
+with no dependencies.
+
+Re-running the harness needs two small packages that are not yet published,
+`omega_seal` (the record sealer) and `omega_gate` (the aggregate-verdict model),
+plus `z3-solver`. Until they are released the commands below will fail at import
+on a fresh machine; this is a known gap and is listed under "Not established".
+
 ```bash
 python3 run.py --no-model        # planted outputs only; needs z3-solver, no LLM
 python3 run.py --judge-runs 3    # full run; needs a local Ollama with qwen2.5-coder:14b
+python3 -m pytest tests -q       # 12 tests of the aggregate-verdict gate
 ```
 
 Lean, TLC (Java, `tla/tla2tools.jar` vendored, see `THIRD_PARTY.md`) and CryptoVerif
@@ -87,7 +97,7 @@ aggregate verdict can never be stronger than its weakest required component
 
 ## Not established
 
-No claim about frontier judges. No claim about properties that were not encoded.
+The harness depends on two unpublished packages (`omega_seal`, `omega_gate`), so a third party can inspect and recompute the records but cannot yet re-run the harness. No claim about frontier judges. No claim about properties that were not encoded.
 No claim that a formal PASS means the decision was right in spirit; the record's
 `boundary` field says so on every run. The two runs were produced by one author on
 one machine.
